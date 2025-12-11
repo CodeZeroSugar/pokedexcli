@@ -1,19 +1,15 @@
 package main
 
-import (
-	"bufio"
-	"fmt"
-	"os"
-	"strings"
-)
+type config struct {
+	NextURL     string
+	PreviousURL string
+}
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
-
-	for {
-		fmt.Print("Pokedex > ")
-		scanner.Scan()
-		firstWord := strings.Fields(strings.ToLower(strings.TrimSpace(scanner.Text())))[0]
-		fmt.Printf("Your command was: %v\n", firstWord)
+	configURL := config{
+		NextURL:     "https://pokeapi.co/api/v2/location-area?offset=0&limit=20",
+		PreviousURL: "",
 	}
+
+	startRepl(configURL)
 }
