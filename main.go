@@ -1,15 +1,25 @@
 package main
 
+import (
+	"time"
+
+	"github.com/CodeZeroSugar/pokedexcli/internal/pokeapi"
+)
+
 type config struct {
-	NextURL     string
-	PreviousURL string
+	pokeapiClient pokeapi.Client
+	NextURL       *string
+	PreviousURL   *string
 }
 
 func main() {
-	configURL := config{
-		NextURL:     "https://pokeapi.co/api/v2/location-area?offset=0&limit=20",
-		PreviousURL: "",
+	client := pokeapi.NewClient(5*time.Second, 5*time.Minute)
+
+	cfg := &config{
+		pokeapiClient: client,
+		NextURL:       nil,
+		PreviousURL:   nil,
 	}
 
-	startRepl(configURL)
+	startRepl(cfg)
 }

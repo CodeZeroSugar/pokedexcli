@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
 )
@@ -70,15 +68,10 @@ func commandHelp(cfg *config) error {
 }
 
 func commandMap(cfg *config) error {
-	resp, err := http.Get(cfg.NextURL)
+	nextURL := cfg.NextURL
+	body, err := cfg.pokeapiClient.Fetch(*nextURL)
 	if err != nil {
-		return fmt.Errorf("error! GET request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("error! Failed to read body of response: %v", err)
+		return fmt.Errorf("error! 'Fetch' method failed: %v", err)
 	}
 
 	locationAreaResp := LocationAreasResponse{}
@@ -91,34 +84,30 @@ func commandMap(cfg *config) error {
 		fmt.Println(locationResults.Name)
 	}
 	if locationAreaResp.Next != nil {
-		cfg.NextURL = *locationAreaResp.Next
+		cfg.NextURL = locationAreaResp.Next
 	} else {
-		cfg.NextURL = ""
+		cfg.NextURL = nil
 	}
 
 	if locationAreaResp.Previous != nil {
-		cfg.PreviousURL = *locationAreaResp.Previous
+		cfg.PreviousURL = locationAreaResp.Previous
 	} else {
-		cfg.PreviousURL = ""
+		cfg.PreviousURL = nil
 	}
 
 	return nil
 }
 
 func commandMapb(cfg *config) error {
-	if cfg.PreviousURL == "" {
+	prevURL := cfg.PreviousURL
+	if cfg.PreviousURL == nil {
 		fmt.Println("you're on the first page")
 		return nil
 	}
-	resp, err := http.Get(cfg.PreviousURL)
-	if err != nil {
-		return fmt.Errorf("error! GET request failed: %v", err)
-	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := cfg.pokeapiClient.Fetch(*prevURL)
 	if err != nil {
-		return fmt.Errorf("error! Failed to read body of response: %v", err)
+		return fmt.Errorf("error! 'Fetch' method failed: %v", err)
 	}
 
 	locationAreaResp := LocationAreasResponse{}
@@ -131,15 +120,15 @@ func commandMapb(cfg *config) error {
 		fmt.Println(locationResults.Name)
 	}
 	if locationAreaResp.Next != nil {
-		cfg.NextURL = *locationAreaResp.Next
+		cfg.NextURL = locationAreaResp.Next
 	} else {
-		cfg.NextURL = ""
+		cfg.NextURL = nil
 	}
 
 	if locationAreaResp.Previous != nil {
-		cfg.PreviousURL = *locationAreaResp.Previous
+		cfg.PreviousURL = locationAreaResp.Previous
 	} else {
-		cfg.PreviousURL = ""
+		cfg.PreviousURL = nil
 	}
 
 	return nil
@@ -151,7 +140,7 @@ func cleanInput(text string) []string {
 	return strings.Fields(cleanText)
 }
 
-func startRepl(cfg config) {
+func startRepl(cfg *config) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
@@ -166,7 +155,7 @@ func startRepl(cfg config) {
 		commandList := getCommands()
 
 		if commandStruct, exists := commandList[commandName]; exists {
-			err := commandStruct.callback(&cfg)
+			err := commandStruct.callback(cfg)
 			if err != nil {
 				fmt.Printf("Error occured during command callback: %v", err)
 			}
