@@ -15,9 +15,10 @@ type config struct {
 func main() {
 	client := pokeapi.NewClient(5*time.Second, 5*time.Minute)
 
+	start := "https://pokeapi.co/api/v2/location-area?offset=0&limit=20"
 	cfg := &config{
 		pokeapiClient: client,
-		NextURL:       nil,
+		NextURL:       &start,
 		PreviousURL:   nil,
 	}
 
