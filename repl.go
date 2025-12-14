@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -23,7 +22,7 @@ type LocationArea struct {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(*config, ...string) error
 }
 
 func getCommands() map[string]cliCommand {
@@ -48,90 +47,27 @@ func getCommands() map[string]cliCommand {
 			description: "Displays the previous 20 location areas",
 			callback:    commandMapb,
 		},
+		"explore": {
+			name:        "explore",
+			description: "Explore an area for Pokemon",
+			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "catch a Pokemon",
+			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "inpect a caught Pokemon",
+			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Displays a list of caught Pokemon",
+			callback:    commandPokedex,
+		},
 	}
-}
-
-func commandExit(cfg *config) error {
-	fmt.Println("Closing the Pokedex... Goodbye!")
-	os.Exit(0)
-
-	return nil
-}
-
-func commandHelp(cfg *config) error {
-	fmt.Println("Welcome to the Pokedex!\nUsage:")
-	fmt.Println()
-	for name, command := range getCommands() {
-		fmt.Printf("%v: %v\n", name, command.description)
-	}
-	return nil
-}
-
-func commandMap(cfg *config) error {
-	nextURL := cfg.NextURL
-	body, err := cfg.pokeapiClient.Fetch(*nextURL)
-	if err != nil {
-		return fmt.Errorf("error! 'Fetch' method failed: %v", err)
-	}
-
-	locationAreaResp := LocationAreasResponse{}
-	err = json.Unmarshal(body, &locationAreaResp)
-	if err != nil {
-		return fmt.Errorf("error! Failed to Unmarshal json: %v", err)
-	}
-
-	for _, locationResults := range locationAreaResp.Results {
-		fmt.Println(locationResults.Name)
-	}
-	if locationAreaResp.Next != nil {
-		cfg.NextURL = locationAreaResp.Next
-	} else {
-		cfg.NextURL = nil
-	}
-
-	if locationAreaResp.Previous != nil {
-		cfg.PreviousURL = locationAreaResp.Previous
-	} else {
-		cfg.PreviousURL = nil
-	}
-
-	return nil
-}
-
-func commandMapb(cfg *config) error {
-	prevURL := cfg.PreviousURL
-	if cfg.PreviousURL == nil {
-		fmt.Println("you're on the first page")
-		return nil
-	}
-
-	body, err := cfg.pokeapiClient.Fetch(*prevURL)
-	if err != nil {
-		return fmt.Errorf("error! 'Fetch' method failed: %v", err)
-	}
-
-	locationAreaResp := LocationAreasResponse{}
-	err = json.Unmarshal(body, &locationAreaResp)
-	if err != nil {
-		return fmt.Errorf("error! Failed to Unmarshal json: %v", err)
-	}
-
-	for _, locationResults := range locationAreaResp.Results {
-		fmt.Println(locationResults.Name)
-	}
-	if locationAreaResp.Next != nil {
-		cfg.NextURL = locationAreaResp.Next
-	} else {
-		cfg.NextURL = nil
-	}
-
-	if locationAreaResp.Previous != nil {
-		cfg.PreviousURL = locationAreaResp.Previous
-	} else {
-		cfg.PreviousURL = nil
-	}
-
-	return nil
 }
 
 func cleanInput(text string) []string {
@@ -152,12 +88,13 @@ func startRepl(cfg *config) {
 		}
 
 		commandName := words[0]
+		commandArgs := words[1:]
 		commandList := getCommands()
 
 		if commandStruct, exists := commandList[commandName]; exists {
-			err := commandStruct.callback(cfg)
+			err := commandStruct.callback(cfg, commandArgs...)
 			if err != nil {
-				fmt.Printf("Error occured during command callback: %v", err)
+				fmt.Printf("Error occured during command callback: %v\n", err)
 			}
 		} else {
 			fmt.Println("Unknown command")
