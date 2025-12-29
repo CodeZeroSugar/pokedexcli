@@ -106,8 +106,5 @@ Feel free to open issues or pull requests! Ideas for improvements:
 - More commands (e.g., battles, evolution info)
 - Colorful output with third-party libraries
 
-## License
-
-MIT License – use and modify freely!
 
 Enjoy your Pokémon adventure in the terminal! 🐾
